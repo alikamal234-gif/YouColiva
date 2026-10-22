@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { CAMPUS_DETAILS } from '../../lib/utils.js';
 
 export function Footer() {
@@ -9,10 +10,15 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand & Mission */}
           <div className="md:col-span-1 space-y-3">
-            <div className="flex items-center gap-2 text-lg font-bold text-gray-900">
-              <span>YouColiva</span>
-              <span className="w-2 h-2 rounded-full bg-brand-600 mb-0.5" />
-            </div>
+            <Link href="/" className="inline-block transition-opacity hover:opacity-90">
+              <Image
+                src="/logo.png"
+                alt="YouColiva"
+                width={140}
+                height={40}
+                className="h-8 w-auto object-contain"
+              />
+            </Link>
             <p className="text-xs text-gray-500 leading-relaxed">
               Plateforme communautaire de logement et de colocation dédiée aux apprenants YouCode
               sur les campus de Youssoufia, Safi et Nador.

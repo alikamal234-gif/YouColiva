@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '../../context/AuthContext.js';
 import { CampusSelector } from './CampusSelector.js';
 import { NotificationDropdown } from './NotificationDropdown.js';
@@ -34,10 +35,16 @@ export function Header() {
           <div className="flex items-center gap-8">
             <Link
               href="/"
-              className="flex items-center gap-2 text-xl font-bold tracking-tight text-gray-900"
+              className="flex items-center transition-opacity hover:opacity-90"
             >
-              <span>YouColiva</span>
-              <span className="w-2 h-2 rounded-full bg-brand-600 mb-0.5" />
+              <Image
+                src="/logo.png"
+                alt="YouColiva"
+                width={150}
+                height={45}
+                className="h-10 w-auto object-contain"
+                priority
+              />
             </Link>
 
             {/* Desktop Main Navigation */}

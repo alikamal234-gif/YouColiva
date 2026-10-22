@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext.js';
 import { Button } from '../../../components/ui/Button.js';
@@ -110,9 +111,15 @@ export default function RegisterPage() {
       <div className="max-w-lg w-full space-y-6 bg-white p-8 border border-gray-200 rounded-lg shadow-sm">
         {/* Brand Header */}
         <div className="text-center">
-          <Link href="/" className="inline-flex items-center gap-2 text-xl font-bold text-gray-900 mb-2">
-            <span>YouColiva</span>
-            <span className="w-2 h-2 rounded-full bg-brand-600 mb-0.5" />
+          <Link href="/" className="inline-block mb-3 transition-opacity hover:opacity-90">
+            <Image
+              src="/logo.png"
+              alt="YouColiva"
+              width={160}
+              height={48}
+              className="h-10 w-auto object-contain mx-auto"
+              priority
+            />
           </Link>
           <h1 className="text-lg font-bold text-gray-900 tracking-tight">
             {step === 'form' ? 'Créer votre compte' : 'Vérification de votre adresse email'}

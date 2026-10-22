@@ -2,6 +2,7 @@
 
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext.js';
 import { Button } from '../../../components/ui/Button.js';
@@ -71,9 +72,15 @@ function VerifyEmailContent() {
     <div className="flex-1 flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8 bg-gray-50/50">
       <div className="max-w-md w-full space-y-6 bg-white p-8 border border-gray-200 rounded-lg shadow-sm">
         <div className="text-center">
-          <Link href="/" className="inline-flex items-center gap-2 text-xl font-bold text-gray-900 mb-2">
-            <span>YouColiva</span>
-            <span className="w-2 h-2 rounded-full bg-brand-600 mb-0.5" />
+          <Link href="/" className="inline-block mb-3 transition-opacity hover:opacity-90">
+            <Image
+              src="/logo.png"
+              alt="YouColiva"
+              width={160}
+              height={48}
+              className="h-10 w-auto object-contain mx-auto"
+              priority
+            />
           </Link>
           <div className="flex justify-center my-3">
             <div className="w-12 h-12 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
