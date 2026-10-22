@@ -71,7 +71,7 @@ export class ChatService {
 
     const query = { conversationId: new mongoose.Types.ObjectId(conversationId) };
 
-    const [items, total] = await Promise.all([
+    const [rawItems, total] = await Promise.all([
       Message.find(query)
         .populate('sender')
         .sort({ createdAt: -1 })
@@ -79,6 +79,9 @@ export class ChatService {
         .limit(Math.min(limit, 100)),
       Message.countDocuments(query),
     ]);
+
+    // Reverse to chronological order (oldest to newest) for chat display
+    const items = rawItems.reverse();
 
     return { items, total };
   }

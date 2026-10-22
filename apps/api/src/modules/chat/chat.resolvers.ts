@@ -21,13 +21,23 @@ export const chatResolvers = {
       }
       return parent.roommatePostId.toString();
     },
-    lastMessageAt: (parent: IConversation) =>
-      parent.lastMessageAt ? parent.lastMessageAt.toISOString() : parent.createdAt.toISOString(),
+    lastMessageAt: (parent: IConversation) => {
+      const d = parent.lastMessageAt || parent.createdAt;
+      return d ? new Date(d).toISOString() : new Date().toISOString();
+    },
+    createdAt: (parent: IConversation) =>
+      parent.createdAt ? new Date(parent.createdAt).toISOString() : new Date().toISOString(),
+    updatedAt: (parent: IConversation) =>
+      parent.updatedAt ? new Date(parent.updatedAt).toISOString() : new Date().toISOString(),
   },
 
   Message: {
     id: (parent: IMessage) => parent._id.toString(),
     conversationId: (parent: IMessage) => parent.conversationId.toString(),
+    createdAt: (parent: IMessage) =>
+      parent.createdAt ? new Date(parent.createdAt).toISOString() : new Date().toISOString(),
+    updatedAt: (parent: IMessage) =>
+      parent.updatedAt ? new Date(parent.updatedAt).toISOString() : new Date().toISOString(),
   },
 
   Query: {

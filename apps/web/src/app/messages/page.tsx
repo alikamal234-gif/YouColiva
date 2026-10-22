@@ -17,6 +17,47 @@ import { useAuth } from '../../context/AuthContext.js';
 import { fetchGraphQL } from '../../lib/api-client.js';
 import type { Conversation, Message, User } from '../../types/index.js';
 
+function parseDateSafe(dateVal: unknown): Date {
+  if (!dateVal) return new Date();
+  if (dateVal instanceof Date) return isNaN(dateVal.getTime()) ? new Date() : dateVal;
+  if (typeof dateVal === 'number') {
+    const d = new Date(dateVal);
+    return isNaN(d.getTime()) ? new Date() : d;
+  }
+  if (typeof dateVal === 'string') {
+    if (/^\d+$/.test(dateVal)) {
+      const num = Number(dateVal);
+      const d = new Date(num);
+      return isNaN(d.getTime()) ? new Date() : d;
+    }
+    const d = new Date(dateVal);
+    if (!isNaN(d.getTime())) return d;
+  }
+  return new Date();
+}
+
+function formatMessageTime(dateVal: unknown): string {
+  const d = parseDateSafe(dateVal);
+  return d.toLocaleTimeString('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function formatConversationDate(dateVal: unknown): string {
+  const d = parseDateSafe(dateVal);
+  return d.toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
+function sortMessagesChronological(list: Message[]): Message[] {
+  return [...list].sort(
+    (a, b) => parseDateSafe(a.createdAt).getTime() - parseDateSafe(b.createdAt).getTime()
+  );
+}
+
 function MessagesContent() {
   const { user, token, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -90,7 +131,7 @@ function MessagesContent() {
 
       setMessages((prev) => {
         if (prev.some((m) => m.id === incomingMsg.id)) return prev;
-        return [...prev, incomingMsg];
+        return sortMessagesChronological([...prev, incomingMsg]);
       });
 
       // Update last message in conversation list
@@ -243,7 +284,8 @@ function MessagesContent() {
         token
       );
 
-      setMessages(data.conversationMessages.items || []);
+      const items = data.conversationMessages?.items || [];
+      setMessages(sortMessagesChronological(items));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Impossible de charger les messages';
       setError(message);
@@ -291,7 +333,7 @@ function MessagesContent() {
           token
         );
 
-        setMessages((prev) => [...prev, data.sendMessage]);
+        setMessages((prev) => sortMessagesChronological([...prev, data.sendMessage]));
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Erreur lors de l\'envoi du message';
@@ -381,10 +423,7 @@ function MessagesContent() {
                             {other?.firstName} {other?.lastName}
                           </span>
                           <span className="text-[10px] text-gray-400 shrink-0 ml-1">
-                            {new Date(conv.lastMessageAt || conv.createdAt).toLocaleDateString('fr-FR', {
-                              day: 'numeric',
-                              month: 'short',
-                            })}
+                            {formatConversationDate(conv.lastMessageAt || conv.createdAt)}
                           </span>
                         </div>
 
@@ -489,10 +528,7 @@ function MessagesContent() {
                             <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                           </div>
                           <span className="text-[10px] text-gray-400 mt-1 px-1">
-                            {new Date(msg.createdAt).toLocaleTimeString('fr-FR', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
+                            {formatMessageTime(msg.createdAt)}
                           </span>
                         </div>
                       );
