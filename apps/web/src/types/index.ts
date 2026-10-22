@@ -82,7 +82,7 @@ export interface Conversation {
 export interface Message {
   id: string;
   conversationId: string;
-  sender: User;
+  sender: Pick<User, 'id' | 'firstName' | 'lastName' | 'role'> & Partial<User>;
   content: string;
   createdAt: string;
 }

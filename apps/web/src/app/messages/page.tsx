@@ -71,7 +71,22 @@ function MessagesContent() {
       setSocketConnected(false);
     });
 
-    socket.on('new_message', (incomingMsg: Message) => {
+    socket.on('new_message', (rawMsg: any) => {
+      if (!rawMsg) return;
+
+      const incomingMsg: Message = {
+        id: String(rawMsg.id || rawMsg._id || `msg_${Date.now()}_${Math.random()}`),
+        conversationId: String(rawMsg.conversationId || ''),
+        content: String(rawMsg.content || ''),
+        createdAt: rawMsg.createdAt || new Date().toISOString(),
+        sender: {
+          id: String(rawMsg.sender?.id || rawMsg.sender?._id || ''),
+          firstName: rawMsg.sender?.firstName || 'Utilisateur',
+          lastName: rawMsg.sender?.lastName || '',
+          role: rawMsg.sender?.role || 'STUDENT',
+        },
+      };
+
       setMessages((prev) => {
         if (prev.some((m) => m.id === incomingMsg.id)) return prev;
         return [...prev, incomingMsg];
@@ -434,12 +449,13 @@ function MessagesContent() {
                     <p>Envoyez votre premier message pour faire connaissance ou poser vos questions.</p>
                   </div>
                 ) : (
-                  messages.map((msg) => {
-                    const isMe = msg.sender.id === user?.id;
+                  messages.map((msg, idx) => {
+                    const isMe = msg.sender?.id === user?.id;
+                    const messageKey = msg.id || (msg as any)._id || `msg_${idx}_${msg.createdAt}`;
 
                     return (
                       <div
-                        key={msg.id}
+                        key={messageKey}
                         className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
                       >
                         <div

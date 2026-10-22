@@ -66,7 +66,20 @@ export function setupChatSocket(httpServer: HttpServer): SocketIOServer {
       async ({ conversationId, content }: { conversationId: string; content: string }) => {
         try {
           const message = await ChatService.sendMessage(conversationId, content, user);
-          io.to(`conversation_${conversationId}`).emit('new_message', message);
+          const populatedSender = message.sender as any;
+          const formattedMessage = {
+            id: message._id.toString(),
+            conversationId: message.conversationId.toString(),
+            content: message.content,
+            createdAt: message.createdAt.toISOString(),
+            sender: {
+              id: (populatedSender?._id || populatedSender?.id || user.userId).toString(),
+              firstName: populatedSender?.firstName || user.email.split('@')[0],
+              lastName: populatedSender?.lastName || '',
+              role: populatedSender?.role || user.role,
+            },
+          };
+          io.to(`conversation_${conversationId}`).emit('new_message', formattedMessage);
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : 'Failed to send message';
           socket.emit('error', { message });
