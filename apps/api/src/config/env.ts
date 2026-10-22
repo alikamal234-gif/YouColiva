@@ -38,7 +38,10 @@ const envSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().default('30d'),
   MAIL: z.string().default('alikkamal0000@gmail.com'),
   PASSWORD: z.string().default('jsti zrwh aaza obrx'),
-  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_ID: z.string().optional().default('921693768189-dl0m2ahp8oi1uuam0r22qtdmllcciobe.apps.googleusercontent.com'),
+  GOOGLE_ID: z.string().optional(),
+  GOOGLE_SECRET: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
   RATE_LIMIT_WINDOW_MS: z
     .string()
     .default('900000')

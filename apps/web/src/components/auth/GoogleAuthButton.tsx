@@ -60,7 +60,7 @@ export function GoogleAuthButton({
 
   const googleClientId =
     process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
-    '1084277717462-placeholder.apps.googleusercontent.com';
+    '921693768189-dl0m2ahp8oi1uuam0r22qtdmllcciobe.apps.googleusercontent.com';
 
   useEffect(() => {
     // Dynamically load Google Identity Services script
