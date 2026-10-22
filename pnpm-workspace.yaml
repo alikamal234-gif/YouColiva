@@ -1,0 +1,13 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+allowBuilds:
+  '@apollo/protobufjs': true
+  esbuild: true
+  mongodb-memory-server: true
+
+onlyBuiltDependencies:
+  - '@apollo/protobufjs'
+  - 'esbuild'
+  - 'mongodb-memory-server'
