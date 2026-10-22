@@ -36,7 +36,7 @@ declare global {
               width?: string | number;
             }
           ) => void;
-          prompt: () => void;
+          prompt: (momentListener?: (moment: any) => void) => void;
         };
       };
     };
@@ -123,12 +123,23 @@ export function GoogleAuthButton({
   }, [googleClientId, campus, role, text, loginWithGoogle, onSuccess, onError, router]);
 
   const handleCustomClick = () => {
-    // If real Google client is loaded and configured with non-placeholder
     const isPlaceholder = googleClientId.includes('placeholder');
     if (window.google?.accounts?.id && !isPlaceholder) {
-      window.google.accounts.id.prompt();
+      try {
+        window.google.accounts.id.prompt((notification: any) => {
+          if (
+            notification?.isNotDisplayed?.() ||
+            notification?.isSkippedMoment?.() ||
+            notification?.isDismissedMoment?.()
+          ) {
+            // If Google GIS blocked the origin or prompt failed, open dev modal fallback
+            setDevModalOpen(true);
+          }
+        });
+      } catch {
+        setDevModalOpen(true);
+      }
     } else {
-      // In dev without a Google Cloud Project Client ID, open instant dev test modal
       setDevModalOpen(true);
     }
   };
