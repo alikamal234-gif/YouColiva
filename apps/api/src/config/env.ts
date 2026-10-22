@@ -34,8 +34,11 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z
     .string()
     .default('youcoliva_jwt_refresh_secret_key_dev_minimum_32_characters'),
-  JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
-  JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
+  JWT_ACCESS_EXPIRES_IN: z.string().default('7d'),
+  JWT_REFRESH_EXPIRES_IN: z.string().default('30d'),
+  MAIL: z.string().default('alikkamal0000@gmail.com'),
+  PASSWORD: z.string().default('jsti zrwh aaza obrx'),
+  GOOGLE_CLIENT_ID: z.string().optional(),
   RATE_LIMIT_WINDOW_MS: z
     .string()
     .default('900000')

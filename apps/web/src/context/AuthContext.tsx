@@ -19,6 +19,9 @@ interface AuthContextType {
     phone?: string;
     agencyName?: string;
   }) => Promise<void>;
+  loginWithGoogle: (idToken: string, campus?: Campus, role?: UserRole) => Promise<void>;
+  verifyEmailCode: (email: string, code: string) => Promise<void>;
+  resendVerificationCode: (email: string) => Promise<string>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -29,6 +32,9 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   login: async () => {},
   register: async () => {},
+  loginWithGoogle: async () => {},
+  verifyEmailCode: async () => {},
+  resendVerificationCode: async () => '',
   logout: () => {},
   refreshUser: async () => {},
 });
@@ -166,6 +172,91 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.register.user);
   };
 
+  const loginWithGoogle = async (idToken: string, campus?: Campus, role?: UserRole) => {
+    const mutation = `
+      mutation LoginWithGoogle($idToken: String!, $campus: Campus, $role: UserRole) {
+        loginWithGoogle(idToken: $idToken, campus: $campus, role: $role) {
+          accessToken
+          refreshToken
+          user {
+            id
+            email
+            firstName
+            lastName
+            role
+            campus
+            phone
+            avatarUrl
+            isEmailVerified
+            isVerified
+            agencyName
+            createdAt
+          }
+        }
+      }
+    `;
+
+    const data = await fetchGraphQL<{
+      loginWithGoogle: { accessToken: string; refreshToken: string; user: User };
+    }>(mutation, { idToken, campus, role });
+
+    localStorage.setItem('youcoliva_access_token', data.loginWithGoogle.accessToken);
+    localStorage.setItem('youcoliva_refresh_token', data.loginWithGoogle.refreshToken);
+    setToken(data.loginWithGoogle.accessToken);
+    setUser(data.loginWithGoogle.user);
+  };
+
+  const verifyEmailCode = async (email: string, code: string) => {
+    const mutation = `
+      mutation VerifyEmailCode($email: String!, $code: String!) {
+        verifyEmailCode(email: $email, code: $code) {
+          accessToken
+          refreshToken
+          user {
+            id
+            email
+            firstName
+            lastName
+            role
+            campus
+            phone
+            avatarUrl
+            isEmailVerified
+            isVerified
+            agencyName
+            createdAt
+          }
+        }
+      }
+    `;
+
+    const data = await fetchGraphQL<{
+      verifyEmailCode: { accessToken: string; refreshToken: string; user: User };
+    }>(mutation, { email, code });
+
+    localStorage.setItem('youcoliva_access_token', data.verifyEmailCode.accessToken);
+    localStorage.setItem('youcoliva_refresh_token', data.verifyEmailCode.refreshToken);
+    setToken(data.verifyEmailCode.accessToken);
+    setUser(data.verifyEmailCode.user);
+  };
+
+  const resendVerificationCode = async (email: string): Promise<string> => {
+    const mutation = `
+      mutation ResendCode($email: String!) {
+        resendVerificationCode(email: $email) {
+          success
+          message
+        }
+      }
+    `;
+
+    const data = await fetchGraphQL<{
+      resendVerificationCode: { success: boolean; message: string };
+    }>(mutation, { email });
+
+    return data.resendVerificationCode.message;
+  };
+
   const logout = () => {
     const refreshToken = localStorage.getItem('youcoliva_refresh_token');
     if (refreshToken) {
@@ -191,6 +282,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         login,
         register,
+        loginWithGoogle,
+        verifyEmailCode,
+        resendVerificationCode,
         logout,
         refreshUser,
       }}

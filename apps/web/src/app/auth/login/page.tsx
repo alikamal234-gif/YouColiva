@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext.js';
 import { Button } from '../../../components/ui/Button.js';
 import { Input } from '../../../components/ui/Input.js';
+import { GoogleAuthButton } from '../../../components/auth/GoogleAuthButton.js';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -51,6 +52,22 @@ export default function LoginPage() {
             {error}
           </div>
         )}
+
+        {/* Google OAuth Button */}
+        <div>
+          <GoogleAuthButton
+            text="signin"
+            onError={(msg) => setError(msg)}
+          />
+        </div>
+
+        {/* Divider */}
+        <div className="relative flex items-center justify-center">
+          <div className="border-t border-gray-200 w-full" />
+          <span className="bg-white px-3 text-[11px] uppercase tracking-wider text-gray-400 font-semibold absolute">
+            ou par email
+          </span>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input

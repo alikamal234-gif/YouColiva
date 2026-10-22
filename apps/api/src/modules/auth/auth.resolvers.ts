@@ -63,6 +63,65 @@ export const authResolvers = {
       return result;
     },
 
+    loginWithGoogle: async (
+      _parent: unknown,
+      {
+        idToken,
+        campus,
+        role,
+      }: { idToken: string; campus?: Parameters<typeof AuthService.loginWithGoogle>[1]; role?: Parameters<typeof AuthService.loginWithGoogle>[2] },
+      context: GraphQLContext
+    ) => {
+      const metadata = {
+        userAgent: context.req.headers['user-agent'],
+        ipAddress: context.req.ip,
+      };
+
+      const result = await AuthService.loginWithGoogle(idToken, campus, role, metadata);
+
+      if (context.res.cookie) {
+        context.res.cookie('refreshToken', result.refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+      }
+
+      return result;
+    },
+
+    verifyEmailCode: async (
+      _parent: unknown,
+      { email, code }: { email: string; code: string },
+      context: GraphQLContext
+    ) => {
+      const metadata = {
+        userAgent: context.req.headers['user-agent'],
+        ipAddress: context.req.ip,
+      };
+
+      const result = await AuthService.verifyEmailCode(email, code, metadata);
+
+      if (context.res.cookie) {
+        context.res.cookie('refreshToken', result.refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+      }
+
+      return result;
+    },
+
+    resendVerificationCode: async (
+      _parent: unknown,
+      { email }: { email: string }
+    ) => {
+      return AuthService.resendVerificationCode(email);
+    },
+
     refreshToken: async (
       _parent: unknown,
       { refreshToken }: { refreshToken: string },

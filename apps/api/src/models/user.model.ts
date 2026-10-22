@@ -5,7 +5,7 @@ export type Campus = 'YOUSSOUFIA' | 'SAFI' | 'NADOR';
 
 export interface IUser extends Document {
   email: string;
-  passwordHash: string;
+  passwordHash?: string;
   firstName: string;
   lastName: string;
   role: UserRole;
@@ -17,6 +17,9 @@ export interface IUser extends Document {
   isVerified: boolean;
   agencyName?: string;
   agencyFeeDetails?: string;
+  googleId?: string;
+  emailVerificationCode?: string;
+  emailVerificationExpiresAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,8 +36,21 @@ const userSchema = new Schema<IUser>(
     },
     passwordHash: {
       type: String,
-      required: true,
+      required: false,
       select: false, // Don't return password hash by default
+    },
+    googleId: {
+      type: String,
+      sparse: true,
+      index: true,
+    },
+    emailVerificationCode: {
+      type: String,
+      select: false,
+    },
+    emailVerificationExpiresAt: {
+      type: Date,
+      select: false,
     },
     firstName: {
       type: String,

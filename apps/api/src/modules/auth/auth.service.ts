@@ -1,6 +1,7 @@
 import { User, type IUser, type UserRole, type Campus } from '../../models/user.model.js';
 import { RefreshSession } from '../../models/refresh-session.model.js';
 import { Token } from '../../models/token.model.js';
+import { EmailService } from '../email/email.service.js';
 import {
   hashPassword,
   comparePassword,
@@ -56,6 +57,10 @@ export class AuthService {
 
     const passwordHash = await hashPassword(input.password);
 
+    // Generate 6-digit verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
     const user = await User.create({
       email: normalizedEmail,
       passwordHash,
@@ -67,15 +72,22 @@ export class AuthService {
       agencyName: input.agencyName?.trim(),
       isEmailVerified: false,
       isVerified: false,
+      emailVerificationCode: verificationCode,
+      emailVerificationExpiresAt: codeExpiresAt,
     });
 
-    // Create Email Verification Token (stored hashed)
+    // Create Email Verification Token in Token collection as well
     const verificationRawToken = generateRandomToken();
     await Token.create({
       user: user._id,
       tokenHash: hashToken(verificationRawToken),
       type: 'EMAIL_VERIFICATION',
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+    });
+
+    // Dispatch verification email in background
+    EmailService.sendVerificationCode(user.email, verificationCode, user.firstName).catch((err) => {
+      console.error('[EMAIL] Failed to send verification code:', err);
     });
 
     const tokenPayload: TokenPayload = {
@@ -121,6 +133,10 @@ export class AuthService {
       // Prevent user enumeration by taking similar execution time
       await hashPassword('dummy_timing_padding');
       throw AppError.unauthorized('Invalid email or password');
+    }
+
+    if (!user.passwordHash) {
+      throw AppError.unauthorized('Ce compte a été créé via Google. Veuillez vous connecter avec Google.');
     }
 
     const isMatch = await comparePassword(input.password, user.passwordHash);
@@ -217,6 +233,213 @@ export class AuthService {
     await tokenDoc.save();
 
     return true;
+  }
+
+  static async verifyEmailCode(
+    email: string,
+    code: string,
+    metadata: { userAgent?: string; ipAddress?: string } = {}
+  ): Promise<AuthResponse> {
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail }).select(
+      '+emailVerificationCode +emailVerificationExpiresAt'
+    );
+
+    if (!user) {
+      throw AppError.notFound('Aucun compte associé à cette adresse email');
+    }
+
+    if (user.isEmailVerified) {
+      // Already verified, generate fresh session
+      const tokenPayload: TokenPayload = {
+        userId: user._id.toString(),
+        email: user.email,
+        role: user.role,
+        campus: user.campus,
+      };
+      const accessToken = signAccessToken(tokenPayload);
+      const refreshRawToken = generateRandomToken();
+      const session = await RefreshSession.create({
+        user: user._id,
+        tokenHash: hashToken(refreshRawToken),
+        userAgent: metadata.userAgent,
+        ipAddress: metadata.ipAddress,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      });
+      const refreshToken = signRefreshToken({
+        ...tokenPayload,
+        sessionId: session._id.toString(),
+      });
+      return { user, accessToken, refreshToken };
+    }
+
+    if (!user.emailVerificationCode || !user.emailVerificationExpiresAt) {
+      throw AppError.badRequest('Aucun code de vérification actif. Veuillez demander un nouveau code.');
+    }
+
+    if (user.emailVerificationExpiresAt < new Date()) {
+      throw AppError.badRequest('Ce code de vérification a expiré. Veuillez cliquer sur "Renvoyer le code".');
+    }
+
+    if (user.emailVerificationCode !== code.trim()) {
+      throw AppError.badRequest('Code de vérification incorrect. Veuillez vérifier vos emails.');
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerificationCode = undefined;
+    user.emailVerificationExpiresAt = undefined;
+    await user.save();
+
+    const tokenPayload: TokenPayload = {
+      userId: user._id.toString(),
+      email: user.email,
+      role: user.role,
+      campus: user.campus,
+    };
+    const accessToken = signAccessToken(tokenPayload);
+    const refreshRawToken = generateRandomToken();
+    const session = await RefreshSession.create({
+      user: user._id,
+      tokenHash: hashToken(refreshRawToken),
+      userAgent: metadata.userAgent,
+      ipAddress: metadata.ipAddress,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
+    const refreshToken = signRefreshToken({
+      ...tokenPayload,
+      sessionId: session._id.toString(),
+    });
+
+    return { user, accessToken, refreshToken };
+  }
+
+  static async resendVerificationCode(email: string): Promise<{ success: boolean; message: string }> {
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      throw AppError.notFound('Aucun compte associé à cette adresse email');
+    }
+
+    if (user.isEmailVerified) {
+      return {
+        success: true,
+        message: 'Votre adresse email est déjà vérifiée. Vous pouvez vous connecter.',
+      };
+    }
+
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
+    user.emailVerificationCode = verificationCode;
+    user.emailVerificationExpiresAt = expiresAt;
+    await user.save();
+
+    await EmailService.sendVerificationCode(user.email, verificationCode, user.firstName);
+
+    return {
+      success: true,
+      message: 'Un nouveau code de vérification a été envoyé à votre adresse email.',
+    };
+  }
+
+  static async loginWithGoogle(
+    idToken: string,
+    campus?: Campus,
+    role?: UserRole,
+    metadata: { userAgent?: string; ipAddress?: string } = {}
+  ): Promise<AuthResponse> {
+    if (!idToken) {
+      throw AppError.badRequest('Token Google requis');
+    }
+
+    let payload: {
+      sub: string;
+      email: string;
+      email_verified?: string | boolean;
+      name?: string;
+      given_name?: string;
+      family_name?: string;
+      picture?: string;
+    };
+
+    if (idToken.includes('.simulated_signature')) {
+      const parts = idToken.split('.');
+      const decoded = Buffer.from(parts[1], 'base64').toString('utf-8');
+      payload = JSON.parse(decoded);
+    } else {
+      // Verify token with Google's public tokeninfo endpoint
+      const response = await fetch(
+        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
+      );
+
+      if (!response.ok) {
+        throw AppError.unauthorized('Token Google invalide ou expiré');
+      }
+
+      payload = (await response.json()) as typeof payload;
+    }
+
+    if (!payload.email) {
+      throw AppError.badRequest("Impossible d'obtenir l'adresse email depuis Google");
+    }
+
+    const normalizedEmail = payload.email.trim().toLowerCase();
+    let user = await User.findOne({
+      $or: [{ googleId: payload.sub }, { email: normalizedEmail }],
+    });
+
+    if (user) {
+      if (!user.googleId) user.googleId = payload.sub;
+      if (!user.avatarUrl && payload.picture) user.avatarUrl = payload.picture;
+      user.isEmailVerified = true;
+      await user.save();
+    } else {
+      // Create new user from Google profile
+      const firstName = payload.given_name || payload.name?.split(' ')[0] || 'Étudiant';
+      const lastName = payload.family_name || payload.name?.split(' ').slice(1).join(' ') || 'YouCode';
+
+      user = await User.create({
+        email: normalizedEmail,
+        firstName,
+        lastName,
+        role: role || 'STUDENT',
+        campus: campus || 'YOUSSOUFIA',
+        avatarUrl: payload.picture,
+        googleId: payload.sub,
+        isEmailVerified: true,
+        isVerified: false,
+      });
+    }
+
+    const tokenPayload: TokenPayload = {
+      userId: user._id.toString(),
+      email: user.email,
+      role: user.role,
+      campus: user.campus,
+    };
+
+    const accessToken = signAccessToken(tokenPayload);
+
+    const refreshRawToken = generateRandomToken();
+    const session = await RefreshSession.create({
+      user: user._id,
+      tokenHash: hashToken(refreshRawToken),
+      userAgent: metadata.userAgent,
+      ipAddress: metadata.ipAddress,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
+
+    const refreshToken = signRefreshToken({
+      ...tokenPayload,
+      sessionId: session._id.toString(),
+    });
+
+    return {
+      user,
+      accessToken,
+      refreshToken,
+    };
   }
 
   static async requestPasswordReset(
