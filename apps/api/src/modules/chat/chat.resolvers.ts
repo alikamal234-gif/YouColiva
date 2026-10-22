@@ -7,6 +7,20 @@ import { AppError } from '../../errors/app-error.js';
 export const chatResolvers = {
   Conversation: {
     id: (parent: IConversation) => parent._id.toString(),
+    listingId: (parent: IConversation) => {
+      if (!parent.listingId) return null;
+      if (typeof parent.listingId === 'object' && '_id' in (parent.listingId as unknown as Record<string, unknown>)) {
+        return (parent.listingId as unknown as { _id: { toString(): string } })._id.toString();
+      }
+      return parent.listingId.toString();
+    },
+    roommatePostId: (parent: IConversation) => {
+      if (!parent.roommatePostId) return null;
+      if (typeof parent.roommatePostId === 'object' && '_id' in (parent.roommatePostId as unknown as Record<string, unknown>)) {
+        return (parent.roommatePostId as unknown as { _id: { toString(): string } })._id.toString();
+      }
+      return parent.roommatePostId.toString();
+    },
     lastMessageAt: (parent: IConversation) =>
       parent.lastMessageAt ? parent.lastMessageAt.toISOString() : parent.createdAt.toISOString(),
   },

@@ -5,12 +5,19 @@ import {
   type RoommatePostFilterInput,
 } from './roommate.service.js';
 import type { IRoommatePost } from '../../models/roommate-post.model.js';
+import { User } from '../../models/user.model.js';
 import type { GraphQLContext } from '../../graphql/context.js';
 import { AppError } from '../../errors/app-error.js';
 
 export const roommateResolvers = {
   RoommatePost: {
     id: (parent: IRoommatePost) => parent._id.toString(),
+    author: async (parent: IRoommatePost) => {
+      if (parent.author && typeof parent.author === 'object' && 'email' in (parent.author as unknown as Record<string, unknown>)) {
+        return parent.author;
+      }
+      return User.findById(parent.author);
+    },
     targetMoveInDate: (parent: IRoommatePost) => parent.targetMoveInDate.toISOString(),
   },
 

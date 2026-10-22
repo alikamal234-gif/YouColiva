@@ -5,12 +5,19 @@ import {
   type ListingFilterInput,
 } from './listings.service.js';
 import type { IListing, ModerationStatus } from '../../models/listing.model.js';
+import { User } from '../../models/user.model.js';
 import type { GraphQLContext } from '../../graphql/context.js';
 import { AppError } from '../../errors/app-error.js';
 
 export const listingsResolvers = {
   Listing: {
     id: (parent: IListing) => parent._id.toString(),
+    owner: async (parent: IListing) => {
+      if (parent.owner && typeof parent.owner === 'object' && 'email' in (parent.owner as unknown as Record<string, unknown>)) {
+        return parent.owner;
+      }
+      return User.findById(parent.owner);
+    },
     location: (parent: IListing) => ({
       longitude: parent.location.coordinates[0],
       latitude: parent.location.coordinates[1],
