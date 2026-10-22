@@ -273,4 +273,33 @@ export class AuthService {
 
     return true;
   }
+
+  static async updateProfile(
+    userId: string,
+    input: {
+      firstName?: string;
+      lastName?: string;
+      campus?: Campus;
+      phone?: string;
+      bio?: string;
+      agencyName?: string;
+      agencyFeeDetails?: string;
+    }
+  ): Promise<IUser> {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw AppError.notFound('Utilisateur introuvable');
+    }
+
+    if (input.firstName !== undefined) user.firstName = input.firstName.trim();
+    if (input.lastName !== undefined) user.lastName = input.lastName.trim();
+    if (input.campus !== undefined) user.campus = input.campus;
+    if (input.phone !== undefined) user.phone = input.phone.trim();
+    if (input.bio !== undefined) user.bio = input.bio.trim();
+    if (input.agencyName !== undefined) user.agencyName = input.agencyName.trim();
+    if (input.agencyFeeDetails !== undefined) user.agencyFeeDetails = input.agencyFeeDetails.trim();
+
+    await user.save();
+    return user;
+  }
 }

@@ -104,5 +104,16 @@ export const authResolvers = {
     ) => {
       return AuthService.resetPassword(token, newPassword);
     },
+
+    updateProfile: async (
+      _parent: unknown,
+      { input }: { input: Parameters<typeof AuthService.updateProfile>[1] },
+      context: GraphQLContext
+    ) => {
+      if (!context.user) {
+        throw AppError.unauthorized('Authentication required to update profile');
+      }
+      return AuthService.updateProfile(context.user.userId, input);
+    },
   },
 };

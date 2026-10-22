@@ -61,6 +61,16 @@ export const authTypeDefs = `#graphql
     password: String!
   }
 
+  input UpdateProfileInput {
+    firstName: String
+    lastName: String
+    campus: Campus
+    phone: String
+    bio: String
+    agencyName: String
+    agencyFeeDetails: String
+  }
+
   extend type Query {
     me: User
   }
@@ -73,5 +83,6 @@ export const authTypeDefs = `#graphql
     verifyEmail(token: String!): Boolean!
     requestPasswordReset(email: String!): GenericResponse!
     resetPassword(token: String!, newPassword: String!): Boolean!
+    updateProfile(input: UpdateProfileInput!): User!
   }
 `;
