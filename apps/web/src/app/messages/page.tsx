@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Building2,
   Circle,
+  ArrowLeft,
 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../../context/AuthContext.js';
@@ -141,16 +142,17 @@ function MessagesContent() {
       setConversations(list);
 
       // Handle direct recipient flow or selected conversation
+      const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
       if (recipientIdFromUrl) {
         startOrSelectWithRecipient(recipientIdFromUrl, listingIdFromUrl || undefined);
       } else if (activeConversationId) {
         const found = list.find((c) => c.id === activeConversationId);
         if (found) {
           selectConversation(found);
-        } else if (list.length > 0) {
+        } else if (list.length > 0 && isDesktop) {
           selectConversation(list[0]);
         }
-      } else if (list.length > 0) {
+      } else if (list.length > 0 && isDesktop) {
         selectConversation(list[0]);
       }
     } catch (err: unknown) {
@@ -304,214 +306,234 @@ function MessagesContent() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6">
-      <div className="flex items-center justify-between pb-4 border-b border-neutral-200 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900 tracking-tight flex items-center gap-2">
-            <MessageSquare className="w-6 h-6 text-blue-600" />
-            Messagerie YouColiva
-          </h1>
-          <p className="mt-1 text-xs text-neutral-500">
-            Échangez directement et en toute sécurité avec les autres étudiants, bailleurs ou colocataires.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs">
-          <Circle
-            className={`w-2.5 h-2.5 ${socketConnected ? 'text-emerald-500 fill-emerald-500' : 'text-neutral-400 fill-neutral-400'}`}
-          />
-          <span className="text-neutral-600">
-            {socketConnected ? 'En direct' : 'Reconnexion...'}
-          </span>
-        </div>
-      </div>
-
-      {error && (
-        <div className="mb-4 border border-red-200 bg-red-50 text-red-700 p-3 rounded-md text-sm flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-12 border border-neutral-200 rounded-lg overflow-hidden bg-white shadow-xs h-[650px]">
-        {/* Conversations List (4 cols) */}
-        <div className="md:col-span-4 border-r border-neutral-200 flex flex-col h-full bg-neutral-50/30">
-          <div className="p-3.5 border-b border-neutral-200 font-semibold text-xs text-neutral-700 uppercase tracking-wider bg-white">
-            Conversations ({conversations.length})
+    <div className="flex-1 flex flex-col h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] overflow-hidden bg-gray-50/50 p-2 sm:p-4">
+      <div className="max-w-7xl w-full mx-auto flex-1 flex flex-col min-h-0 bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden">
+        {error && (
+          <div className="shrink-0 m-2.5 border border-red-200 bg-red-50 text-red-700 p-2.5 rounded-md text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
           </div>
+        )}
 
-          <div className="flex-1 overflow-y-auto divide-y divide-neutral-100">
-            {loadingConversations ? (
-              <div className="p-6 text-center text-xs text-neutral-500">
-                Chargement des conversations...
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-12 min-h-0 overflow-hidden divide-y md:divide-y-0 md:divide-x divide-gray-200">
+          {/* Conversations List (4 cols) */}
+          <div
+            className={`md:col-span-4 lg:col-span-4 flex flex-col h-full min-h-0 bg-white ${
+              selectedConversation ? 'hidden md:flex' : 'flex'
+            }`}
+          >
+            <div className="p-3.5 border-b border-gray-200 flex items-center justify-between shrink-0 bg-white">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-blue-600" />
+                <h1 className="font-bold text-xs text-gray-900 uppercase tracking-wider">
+                  Conversations ({conversations.length})
+                </h1>
               </div>
-            ) : conversations.length === 0 ? (
-              <div className="p-6 text-center text-xs text-neutral-500 space-y-2">
-                <p>Aucune conversation pour l&apos;instant.</p>
-                <p className="text-neutral-400">
-                  Contactez un propriétaire ou un colocataire depuis une annonce pour démarrer une discussion.
-                </p>
+
+              <div className="flex items-center gap-1.5 text-[11px]">
+                <Circle
+                  className={`w-2 h-2 ${
+                    socketConnected
+                      ? 'text-emerald-500 fill-emerald-500'
+                      : 'text-gray-400 fill-gray-400'
+                  }`}
+                />
+                <span className="text-gray-500 text-[11px]">
+                  {socketConnected ? 'En direct' : 'Reconnexion'}
+                </span>
               </div>
-            ) : (
-              conversations.map((conv) => {
-                const other = getInterlocutor(conv);
-                const isSelected = selectedConversation?.id === conv.id;
+            </div>
 
-                return (
-                  <button
-                    key={conv.id}
-                    onClick={() => selectConversation(conv)}
-                    className={`w-full text-left p-3.5 transition-colors flex items-start gap-3 ${
-                      isSelected
-                        ? 'bg-blue-50/70 border-l-4 border-blue-600'
-                        : 'hover:bg-neutral-100/70'
-                    }`}
-                  >
-                    <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 font-semibold flex items-center justify-center shrink-0 text-sm">
-                      {other?.firstName ? other.firstName.charAt(0).toUpperCase() : 'U'}
-                    </div>
+            <div className="flex-1 overflow-y-auto divide-y divide-gray-100 min-h-0">
+              {loadingConversations ? (
+                <div className="p-6 text-center text-xs text-gray-400">
+                  Chargement des conversations...
+                </div>
+              ) : conversations.length === 0 ? (
+                <div className="p-6 text-center text-xs text-gray-400 space-y-2">
+                  <p className="font-medium text-gray-600">Aucune conversation pour l&apos;instant</p>
+                  <p>
+                    Contactez un propriétaire ou un colocataire depuis une annonce pour démarrer une discussion.
+                  </p>
+                </div>
+              ) : (
+                conversations.map((conv) => {
+                  const other = getInterlocutor(conv);
+                  const isSelected = selectedConversation?.id === conv.id;
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sm text-neutral-900 truncate">
-                          {other?.firstName} {other?.lastName}
-                        </span>
-                        <span className="text-[11px] text-neutral-400 shrink-0 ml-1">
-                          {new Date(conv.lastMessageAt || conv.createdAt).toLocaleDateString('fr-FR', {
-                            day: 'numeric',
-                            month: 'short',
-                          })}
-                        </span>
+                  return (
+                    <button
+                      key={conv.id}
+                      onClick={() => selectConversation(conv)}
+                      className={`w-full text-left p-3.5 transition-colors flex items-start gap-3 ${
+                        isSelected
+                          ? 'bg-blue-50/80 border-l-4 border-blue-600'
+                          : 'hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 font-semibold flex items-center justify-center shrink-0 text-xs">
+                        {other?.firstName ? other.firstName.charAt(0).toUpperCase() : 'U'}
                       </div>
 
-                      <p className="text-xs text-neutral-500 truncate mt-0.5">
-                        {conv.lastMessage || 'Aucun message pour l\'instant'}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-xs text-gray-900 truncate">
+                            {other?.firstName} {other?.lastName}
+                          </span>
+                          <span className="text-[10px] text-gray-400 shrink-0 ml-1">
+                            {new Date(conv.lastMessageAt || conv.createdAt).toLocaleDateString('fr-FR', {
+                              day: 'numeric',
+                              month: 'short',
+                            })}
+                          </span>
+                        </div>
 
-                      {conv.listingId && (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-blue-600 mt-1">
-                          <Building2 className="w-3 h-3" />
-                          Au sujet d&apos;un logement
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                );
-              })
-            )}
+                        <p className="text-xs text-gray-500 truncate mt-0.5">
+                          {conv.lastMessage || 'Aucun message pour l\'instant'}
+                        </p>
+
+                        {conv.listingId && (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-blue-600 mt-1 font-medium">
+                            <Building2 className="w-3 h-3" />
+                            Au sujet d&apos;un logement
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Message Thread (8 cols) */}
-        <div className="md:col-span-8 flex flex-col h-full bg-white">
-          {selectedConversation ? (
-            <>
-              {/* Thread Header */}
-              <div className="p-3.5 border-b border-neutral-200 flex items-center justify-between bg-white">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-neutral-100 text-neutral-700 font-semibold flex items-center justify-center text-xs">
-                    {getInterlocutor(selectedConversation)?.firstName?.charAt(0).toUpperCase() || 'U'}
+          {/* Message Thread (8 cols) */}
+          <div
+            className={`md:col-span-8 lg:col-span-8 flex flex-col h-full min-h-0 bg-white ${
+              !selectedConversation ? 'hidden md:flex' : 'flex'
+            }`}
+          >
+            {selectedConversation ? (
+              <>
+                {/* Thread Header */}
+                <div className="p-3 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
+                  <div className="flex items-center gap-2.5">
+                    {/* Back button on mobile */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedConversation(null);
+                        router.replace('/messages', { scroll: false });
+                      }}
+                      className="md:hidden p-1.5 -ml-1 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+                      aria-label="Retour aux conversations"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                    </button>
+
+                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-semibold flex items-center justify-center text-xs shrink-0">
+                      {getInterlocutor(selectedConversation)?.firstName?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <div>
+                      <h2 className="text-xs font-semibold text-gray-900">
+                        {getInterlocutor(selectedConversation)?.firstName}{' '}
+                        {getInterlocutor(selectedConversation)?.lastName}
+                      </h2>
+                      <span className="text-[11px] text-gray-500 block">
+                        {getInterlocutor(selectedConversation)?.role === 'LANDLORD'
+                          ? 'Propriétaire'
+                          : getInterlocutor(selectedConversation)?.role === 'AGENT'
+                          ? 'Agent immobilier'
+                          : 'Étudiant YouCode'}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-sm font-semibold text-neutral-900">
-                      {getInterlocutor(selectedConversation)?.firstName}{' '}
-                      {getInterlocutor(selectedConversation)?.lastName}
-                    </h2>
-                    <span className="text-xs text-neutral-500 block">
-                      {getInterlocutor(selectedConversation)?.role === 'LANDLORD'
-                        ? 'Propriétaire'
-                        : getInterlocutor(selectedConversation)?.role === 'AGENT'
-                        ? 'Agent immobilier'
-                        : 'Étudiant YouCode'}
-                    </span>
-                  </div>
+
+                  {selectedConversation.listingId && (
+                    <Link
+                      href={`/listings/${selectedConversation.listingId}`}
+                      className="text-xs font-medium text-blue-600 hover:text-blue-800 underline flex items-center gap-1"
+                    >
+                      Voir l&apos;annonce
+                    </Link>
+                  )}
                 </div>
 
-                {selectedConversation.listingId && (
-                  <Link
-                    href={`/listings/${selectedConversation.listingId}`}
-                    className="text-xs font-medium text-blue-600 hover:text-blue-800 underline flex items-center gap-1"
-                  >
-                    Voir l&apos;annonce
-                  </Link>
-                )}
-              </div>
+                {/* Messages Body - Scrollable */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/60 min-h-0">
+                  {loadingMessages ? (
+                    <div className="text-center py-10 text-xs text-gray-400">
+                      Chargement des messages...
+                    </div>
+                  ) : messages.length === 0 ? (
+                    <div className="text-center py-16 text-xs text-gray-500 space-y-1">
+                      <p className="font-medium text-gray-700">Début de la conversation</p>
+                      <p>Envoyez votre premier message pour faire connaissance ou poser vos questions.</p>
+                    </div>
+                  ) : (
+                    messages.map((msg, idx) => {
+                      const isMe = msg.sender?.id === user?.id;
+                      const messageKey = msg.id || (msg as any)._id || `msg_${idx}_${msg.createdAt}`;
 
-              {/* Messages Body */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-neutral-50/40">
-                {loadingMessages ? (
-                  <div className="text-center py-10 text-xs text-neutral-400">
-                    Chargement des messages...
-                  </div>
-                ) : messages.length === 0 ? (
-                  <div className="text-center py-16 text-xs text-neutral-500 space-y-1">
-                    <p className="font-medium text-neutral-700">Début de la conversation</p>
-                    <p>Envoyez votre premier message pour faire connaissance ou poser vos questions.</p>
-                  </div>
-                ) : (
-                  messages.map((msg, idx) => {
-                    const isMe = msg.sender?.id === user?.id;
-                    const messageKey = msg.id || (msg as any)._id || `msg_${idx}_${msg.createdAt}`;
-
-                    return (
-                      <div
-                        key={messageKey}
-                        className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
-                      >
+                      return (
                         <div
-                          className={`max-w-[75%] rounded-lg px-3.5 py-2 text-sm leading-relaxed ${
-                            isMe
-                              ? 'bg-blue-600 text-white rounded-br-none'
-                              : 'bg-white text-neutral-900 border border-neutral-200 rounded-bl-none shadow-2xs'
-                          }`}
+                          key={messageKey}
+                          className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
                         >
-                          <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                          <div
+                            className={`max-w-[75%] rounded-xl px-3.5 py-2 text-xs leading-relaxed ${
+                              isMe
+                                ? 'bg-blue-600 text-white rounded-br-none shadow-xs'
+                                : 'bg-white text-gray-900 border border-gray-200 rounded-bl-none shadow-xs'
+                            }`}
+                          >
+                            <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                          </div>
+                          <span className="text-[10px] text-gray-400 mt-1 px-1">
+                            {new Date(msg.createdAt).toLocaleTimeString('fr-FR', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
                         </div>
-                        <span className="text-[10px] text-neutral-400 mt-1 px-1">
-                          {new Date(msg.createdAt).toLocaleTimeString('fr-FR', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                      </div>
-                    );
-                  })
-                )}
-                <div ref={messagesEndRef} />
-              </div>
+                      );
+                    })
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
 
-              {/* Message Input */}
-              <form
-                onSubmit={handleSendMessage}
-                className="p-3 border-t border-neutral-200 bg-white flex items-center gap-2"
-              >
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Écrivez votre message..."
-                  className="flex-1 px-3 py-2 text-sm border border-neutral-300 rounded-md focus:outline-hidden focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
-                  disabled={sending}
-                />
-                <button
-                  type="submit"
-                  disabled={sending || !newMessage.trim()}
-                  className="inline-flex items-center justify-center p-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                  aria-label="Envoyer"
+                {/* Message Input - Fixed bottom */}
+                <form
+                  onSubmit={handleSendMessage}
+                  className="p-3 border-t border-gray-200 bg-white flex items-center gap-2 shrink-0"
                 >
-                  <Send className="w-4 h-4" />
-                </button>
-              </form>
-            </>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-neutral-500">
-              <UserIcon className="w-12 h-12 text-neutral-300 mb-3" />
-              <p className="text-sm font-medium text-neutral-700">Aucune conversation sélectionnée</p>
-              <p className="text-xs text-neutral-400 mt-1 max-w-xs">
-                Choisissez une conversation dans la colonne de gauche pour afficher l&apos;historique des échanges.
-              </p>
-            </div>
-          )}
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Écrivez votre message..."
+                    className="flex-1 px-3 py-2 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
+                    disabled={sending}
+                  />
+                  <button
+                    type="submit"
+                    disabled={sending || !newMessage.trim()}
+                    className="inline-flex items-center justify-center p-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                    aria-label="Envoyer"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-gray-500">
+                <UserIcon className="w-12 h-12 text-gray-300 mb-3" />
+                <p className="text-sm font-medium text-gray-700">Aucune conversation sélectionnée</p>
+                <p className="text-xs text-gray-400 mt-1 max-w-xs">
+                  Choisissez une conversation dans la colonne de gauche pour afficher l&apos;historique des échanges.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

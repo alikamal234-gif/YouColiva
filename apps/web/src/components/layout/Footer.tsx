@@ -1,9 +1,19 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { CAMPUS_DETAILS } from '../../lib/utils.js';
 
 export function Footer() {
+  const pathname = usePathname();
+
+  // Hide footer on messages page for a fixed full-height chat experience
+  if (pathname?.startsWith('/messages')) {
+    return null;
+  }
+
   return (
     <footer className="bg-white border-t border-gray-200 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
