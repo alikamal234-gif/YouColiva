@@ -368,10 +368,17 @@ export class AuthService {
       const decoded = Buffer.from(parts[1], 'base64').toString('utf-8');
       payload = JSON.parse(decoded);
     } else {
-      // Verify token with Google's public tokeninfo endpoint
-      const response = await fetch(
+      // Verify token with Google's public tokeninfo endpoint (supports id_token and access_token)
+      let response = await fetch(
         `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
       );
+
+      if (!response.ok) {
+        // Fallback: check as access_token or via userinfo endpoint
+        response = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo`, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+      }
 
       if (!response.ok) {
         throw AppError.unauthorized('Token Google invalide ou expiré');
