@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { User } from '../models/user.model.js';
 import { Listing } from '../models/listing.model.js';
 import { RoommatePost } from '../models/roommate-post.model.js';
+import { Notification } from '../models/notification.model.js';
 import { hashPassword } from '../utils/crypto.js';
 import { env } from '../config/env.js';
 
@@ -186,6 +187,124 @@ export async function seedDatabase() {
   });
 
   console.log('Created 2 demo roommate posts.');
+
+  // 4. Create demo notifications for student (12 notifications to test pagination and Show More)
+  await Notification.deleteMany({});
+  const now = Date.now();
+  const demoNotifs = [
+    {
+      user: student._id,
+      title: 'Nouveau logement disponible',
+      message: 'Studio meublé et lumineux à 5 min de YouCode Youssoufia (1 200 MAD)',
+      type: 'NEW_LISTING',
+      link: `/listings/${listingYoussoufia._id}`,
+      isRead: false,
+      createdAt: new Date(now - 1000 * 60 * 5), // 5 min ago
+    },
+    {
+      user: student._id,
+      title: 'Nouveau message reçu',
+      message: 'Hassan Benkirane : "Bonjour Amine, le studio est disponible pour une visite demain."',
+      type: 'NEW_MESSAGE',
+      link: '/messages',
+      isRead: false,
+      createdAt: new Date(now - 1000 * 60 * 25), // 25 min ago
+    },
+    {
+      user: student._id,
+      title: 'Nouvelle recherche de colocataire',
+      message: 'Colocation Safi - Chambre disponible immédiatement pour apprenant YouCode',
+      type: 'NEW_ROOMMATE_POST',
+      link: '/roommates',
+      isRead: false,
+      createdAt: new Date(now - 1000 * 60 * 60 * 2), // 2h ago
+    },
+    {
+      user: student._id,
+      title: 'Bienvenue sur YouColiva',
+      message: 'Votre profil étudiant YouCode a été vérifié avec succès.',
+      type: 'GENERAL',
+      link: '/profile',
+      isRead: true,
+      createdAt: new Date(now - 1000 * 60 * 60 * 6), // 6h ago
+    },
+    {
+      user: student._id,
+      title: 'Nouveau logement disponible',
+      message: 'Grand appartement F4 en colocation étudiante proche YouCode Safi',
+      type: 'NEW_LISTING',
+      link: `/listings/${listingSafi._id}`,
+      isRead: true,
+      createdAt: new Date(now - 1000 * 60 * 60 * 12),
+    },
+    {
+      user: student._id,
+      title: 'Nouveau logement disponible',
+      message: 'Chambre moderne dans résidence neuve YouCode Nador',
+      type: 'NEW_LISTING',
+      link: `/listings/${listingNador._id}`,
+      isRead: true,
+      createdAt: new Date(now - 1000 * 60 * 60 * 24),
+    },
+    {
+      user: student._id,
+      title: 'Conseil de sécurité',
+      message: 'Ne versez aucun acompte avant d\'avoir visité le logement et signé un bail régulier.',
+      type: 'GENERAL',
+      link: '/legal/terms',
+      isRead: true,
+      createdAt: new Date(now - 1000 * 60 * 60 * 36),
+    },
+    {
+      user: student._id,
+      title: 'Nouveau message reçu',
+      message: 'Fatima Zahra : "Les charges WiFi et eau sont incluses dans le loyer."',
+      type: 'NEW_MESSAGE',
+      link: '/messages',
+      isRead: true,
+      createdAt: new Date(now - 1000 * 60 * 60 * 48),
+    },
+    {
+      user: student._id,
+      title: 'Annonce mise à jour',
+      message: 'Le prix de la colocation Safi a été réajusté à 800 MAD / mois.',
+      type: 'NEW_LISTING',
+      link: `/listings/${listingSafi._id}`,
+      isRead: true,
+      createdAt: new Date(now - 1000 * 60 * 60 * 60),
+    },
+    {
+      user: student._id,
+      title: 'Recherche de colocataires active',
+      message: 'Nouveau post pour maison avec jardin à Youssoufia.',
+      type: 'NEW_ROOMMATE_POST',
+      link: '/roommates',
+      isRead: true,
+      createdAt: new Date(now - 1000 * 60 * 60 * 72),
+    },
+    {
+      user: student._id,
+      title: 'Rappel rentrée YouCode',
+      message: 'Les sessions de rentrée approchent : pensez à finaliser votre réservation.',
+      type: 'GENERAL',
+      link: '/listings',
+      isRead: true,
+      createdAt: new Date(now - 1000 * 60 * 60 * 96),
+    },
+    {
+      user: student._id,
+      title: 'Bienvenue dans la communauté',
+      message: 'Consultez la charte de respect mutuel et de convivialité YouColiva.',
+      type: 'GENERAL',
+      link: '/legal/terms',
+      isRead: true,
+      createdAt: new Date(now - 1000 * 60 * 60 * 120),
+    },
+  ];
+
+  await Notification.insertMany(demoNotifs);
+  console.log(`Created ${demoNotifs.length} demo notifications for student.`);
+
   console.log('Database seed complete!');
   await mongoose.disconnect();
 }

@@ -8,6 +8,7 @@ import {
 import type { Campus } from '../../models/user.model.js';
 import { AppError } from '../../errors/app-error.js';
 import type { TokenPayload } from '../../utils/auth-tokens.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 export interface CreateListingInput {
   title: string;
@@ -88,6 +89,15 @@ export class ListingsService {
       availableFrom: input.availableFrom || new Date(),
     });
 
+    // Notify campus users about new listing
+    NotificationsService.notifyCampusUsers(listing.campus, {
+      title: 'Nouveau logement disponible',
+      message: `${listing.title} (${listing.neighborhood}) - ${listing.pricePerMonth} MAD`,
+      type: 'NEW_LISTING',
+      link: `/listings/${listing._id}`,
+      excludeUserId: user.userId,
+    }).catch(() => {});
+
     return listing;
   }
 
@@ -167,9 +177,6 @@ export class ListingsService {
       throw AppError.notFound('Listing not found');
     }
 
-    listing.moderationStatus = status;
-    if (reason) listing.moderationReason = reason;
-
     if (status === 'APPROVED') {
       listing.status = 'PUBLISHED';
     } else if (status === 'REJECTED') {
@@ -177,6 +184,17 @@ export class ListingsService {
     }
 
     await listing.save();
+
+    NotificationsService.createNotification(listing.owner.toString(), {
+      title: status === 'APPROVED' ? 'Annonce approuvée !' : 'Annonce rejetée',
+      message:
+        status === 'APPROVED'
+          ? `Votre annonce "${listing.title}" a été validée et est maintenant visible.`
+          : `Votre annonce "${listing.title}" a été rejetée. Motif : ${reason || 'Non précisé'}.`,
+      type: 'LISTING_MODERATED',
+      link: `/listings/${listing._id}`,
+    }).catch(() => {});
+
     return listing;
   }
 

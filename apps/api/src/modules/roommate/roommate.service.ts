@@ -7,6 +7,7 @@ import {
 import type { Campus } from '../../models/user.model.js';
 import { AppError } from '../../errors/app-error.js';
 import type { TokenPayload } from '../../utils/auth-tokens.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 export interface CreateRoommatePostInput {
   title: string;
@@ -41,7 +42,7 @@ export class RoommateService {
       throw AppError.badRequest('Budget cannot be negative');
     }
 
-    return RoommatePost.create({
+    const post = await RoommatePost.create({
       author: user.userId,
       title: input.title.trim(),
       description: input.description.trim(),
@@ -52,6 +53,16 @@ export class RoommateService {
       lifestyleHabits: input.lifestyleHabits || [],
       status: 'OPEN',
     });
+
+    NotificationsService.notifyCampusUsers(post.campus, {
+      title: 'Nouvelle recherche de colocataire',
+      message: `${post.title} - Budget max : ${post.budgetMax} MAD`,
+      type: 'NEW_ROOMMATE_POST',
+      link: '/roommates',
+      excludeUserId: user.userId,
+    }).catch(() => {});
+
+    return post;
   }
 
   static async updatePost(

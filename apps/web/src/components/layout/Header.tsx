@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext.js';
 import { CampusSelector } from './CampusSelector.js';
+import { NotificationDropdown } from './NotificationDropdown.js';
 import {
   Home,
   Users,
@@ -84,6 +85,8 @@ export function Header() {
                   </Link>
                 )}
 
+                <NotificationDropdown />
+
                 <Link
                   href="/favorites"
                   className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
@@ -150,6 +153,7 @@ export function Header() {
           {/* Mobile hamburger */}
           <div className="md:hidden flex items-center gap-2">
             <CampusSelector />
+            {user && <NotificationDropdown />}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-gray-600 hover:text-gray-900"

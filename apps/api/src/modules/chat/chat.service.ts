@@ -1,5 +1,6 @@
 import { Conversation, type IConversation } from '../../models/conversation.model.js';
 import { Message, type IMessage } from '../../models/message.model.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { AppError } from '../../errors/app-error.js';
 import type { TokenPayload } from '../../utils/auth-tokens.js';
 import mongoose from 'mongoose';
@@ -113,6 +114,19 @@ export class ChatService {
     conversation.lastMessage = trimmed.substring(0, 100);
     conversation.lastMessageAt = new Date();
     await conversation.save();
+
+    // Notify other participant(s)
+    const otherParticipants = conversation.participants.filter(
+      (p) => p.toString() !== user.userId
+    );
+    for (const recipientId of otherParticipants) {
+      NotificationsService.createNotification(recipientId.toString(), {
+        title: 'Nouveau message reçu',
+        message: `${trimmed.substring(0, 80)}`,
+        type: 'NEW_MESSAGE',
+        link: `/messages?conversationId=${conversation._id}`,
+      }).catch(() => {});
+    }
 
     return message.populate('sender');
   }

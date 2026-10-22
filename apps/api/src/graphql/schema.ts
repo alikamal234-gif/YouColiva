@@ -12,6 +12,8 @@ import { favoritesTypeDefs } from '../modules/favorites/favorites.typeDefs.js';
 import { favoritesResolvers } from '../modules/favorites/favorites.resolvers.js';
 import { reportsTypeDefs } from '../modules/reports/reports.typeDefs.js';
 import { reportsResolvers } from '../modules/reports/reports.resolvers.js';
+import { notificationsTypeDefs } from '../modules/notifications/notifications.typeDefs.js';
+import { notificationsResolvers } from '../modules/notifications/notifications.resolvers.js';
 
 const rootTypeDefs = `#graphql
   type Query {
@@ -41,6 +43,7 @@ export const typeDefs = [
   chatTypeDefs,
   favoritesTypeDefs,
   reportsTypeDefs,
+  notificationsTypeDefs,
 ];
 
 export const resolvers = [
@@ -52,4 +55,5 @@ export const resolvers = [
   chatResolvers,
   favoritesResolvers,
   reportsResolvers,
+  notificationsResolvers,
 ];
