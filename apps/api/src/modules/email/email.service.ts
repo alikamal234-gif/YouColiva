@@ -57,7 +57,7 @@ export class EmailService {
       </div>
 
       <p style="font-size: 12px; color: #6B7280; text-align: center; margin: 0 0 24px 0;">
-        ⏱️ Ce code est valable pendant <strong>15 minutes</strong>.
+         Ce code est valable pendant <strong>15 minutes</strong>.
       </p>
 
       
