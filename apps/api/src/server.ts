@@ -60,7 +60,8 @@ export async function createApp(): Promise<AppInstance> {
   // Security headers
   app.use(
     helmet({
-      crossOriginEmbedderPolicy: env.NODE_ENV === 'production',
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
       contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false,
     })
   );
@@ -70,9 +71,22 @@ export async function createApp(): Promise<AppInstance> {
     cors({
       origin: (origin, callback) => {
         // Allow requests with no origin (such as mobile apps, curl, or same-origin)
-        if (!origin || env.CORS_ORIGIN.includes(origin)) {
+        if (!origin) {
           return callback(null, true);
         }
+
+        // Allow localhost and 127.0.0.1 on any port in development
+        if (
+          env.NODE_ENV !== 'production' &&
+          /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+        ) {
+          return callback(null, true);
+        }
+
+        if (env.CORS_ORIGIN.includes(origin)) {
+          return callback(null, true);
+        }
+
         return callback(new AppError(`Origin ${origin} not allowed by CORS`, 403, 'CORS_ERROR'));
       },
       credentials: true,
