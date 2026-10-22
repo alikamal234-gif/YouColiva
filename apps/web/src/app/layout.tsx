@@ -17,8 +17,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }): React.ReactElement {
   return (
-    <html lang="fr" className="h-full">
-      <body className="flex flex-col min-h-screen bg-white text-gray-900">
+    <html lang="fr" className="h-full" suppressHydrationWarning>
+      <body className="flex flex-col min-h-screen bg-white text-gray-900" suppressHydrationWarning>
         <AuthProvider>
           <CampusProvider>
             <Header />

@@ -76,6 +76,11 @@ function MessagesContent() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [socketConnected, setSocketConnected] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -347,8 +352,25 @@ function MessagesContent() {
     return conv.participants.find((p) => p.id !== user?.id) || conv.participants[0];
   };
 
+  if (!mounted) {
+    return (
+      <div
+        suppressHydrationWarning
+        className="flex-1 flex flex-col h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] overflow-hidden bg-gray-50/50 p-2 sm:p-4"
+      >
+        <div className="max-w-7xl w-full mx-auto flex-1 flex flex-col min-h-0 bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden items-center justify-center p-8 text-center text-xs text-gray-400">
+          <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />
+          <p>Chargement de la messagerie...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 flex flex-col h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] overflow-hidden bg-gray-50/50 p-2 sm:p-4">
+    <div
+      suppressHydrationWarning
+      className="flex-1 flex flex-col h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] overflow-hidden bg-gray-50/50 p-2 sm:p-4"
+    >
       <div className="max-w-7xl w-full mx-auto flex-1 flex flex-col min-h-0 bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden">
         {error && (
           <div className="shrink-0 m-2.5 border border-red-200 bg-red-50 text-red-700 p-2.5 rounded-md text-xs flex items-center gap-2">
