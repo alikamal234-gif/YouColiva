@@ -54,9 +54,13 @@ export function NotificationDropdown() {
     };
   }, [isOpen]);
 
+  const getActiveToken = () => {
+    return token || (typeof window !== 'undefined' ? localStorage.getItem('youcoliva_access_token') : null);
+  };
+
   // Fetch initial unread count on mount and polling
   useEffect(() => {
-    if (!user || !token) return;
+    if (!user) return;
 
     fetchUnreadCount();
 
@@ -68,13 +72,16 @@ export function NotificationDropdown() {
   }, [user, token]);
 
   const fetchUnreadCount = async () => {
+    const activeToken = getActiveToken();
+    if (!activeToken) return;
+
     try {
       const query = `
         query GetUnreadCount {
           unreadNotificationsCount
         }
       `;
-      const data = await fetchGraphQL<{ unreadNotificationsCount: number }>(query, {}, token);
+      const data = await fetchGraphQL<{ unreadNotificationsCount: number }>(query, {}, activeToken);
       setUnreadCount(data.unreadNotificationsCount || 0);
     } catch {
       // ignore in background
@@ -82,7 +89,9 @@ export function NotificationDropdown() {
   };
 
   const loadNotifications = async (offset = 0, isAppend = false) => {
-    if (!token) return;
+    const activeToken = getActiveToken();
+    if (!activeToken) return;
+
     if (isAppend) {
       setLoadingMore(true);
     } else {
@@ -112,7 +121,7 @@ export function NotificationDropdown() {
       const data = await fetchGraphQL<{ myNotifications: NotificationFeed }>(
         query,
         { limit: 10, offset },
-        token
+        activeToken
       );
 
       const feed = data.myNotifications;
@@ -125,7 +134,7 @@ export function NotificationDropdown() {
       setUnreadCount(feed.unreadCount);
       setHasMore(feed.hasMore);
     } catch (err) {
-      console.error('Erreur chargement notifications:', err);
+      console.warn('Erreur chargement notifications:', err);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -145,7 +154,8 @@ export function NotificationDropdown() {
   };
 
   const handleNotificationClick = async (notif: AppNotification) => {
-    if (!notif.isRead) {
+    const activeToken = getActiveToken();
+    if (!notif.isRead && activeToken) {
       try {
         const mutation = `
           mutation MarkRead($id: ID!) {
@@ -155,7 +165,7 @@ export function NotificationDropdown() {
             }
           }
         `;
-        await fetchGraphQL(mutation, { id: notif.id }, token);
+        await fetchGraphQL(mutation, { id: notif.id }, activeToken);
         setNotifications((prev) =>
           prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
         );
@@ -172,13 +182,16 @@ export function NotificationDropdown() {
   };
 
   const handleMarkAllAsRead = async () => {
+    const activeToken = getActiveToken();
+    if (!activeToken) return;
+
     try {
       const mutation = `
         mutation MarkAll {
           markAllNotificationsAsRead
         }
       `;
-      await fetchGraphQL(mutation, {}, token);
+      await fetchGraphQL(mutation, {}, activeToken);
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch {

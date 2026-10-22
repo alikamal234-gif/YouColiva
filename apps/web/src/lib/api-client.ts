@@ -20,7 +20,7 @@ export async function fetchGraphQL<T>(
   };
 
   const activeToken =
-    token !== undefined
+    token !== undefined && token !== null && token !== ''
       ? token
       : typeof window !== 'undefined'
       ? localStorage.getItem('youcoliva_access_token')
@@ -45,7 +45,59 @@ export async function fetchGraphQL<T>(
   const json: GraphQLResponse<T> = await response.json();
 
   if (json.errors && json.errors.length > 0) {
-    throw new Error(json.errors[0].message);
+    const errMsg = json.errors[0].message;
+    const isAuthError =
+      errMsg.includes('Authentication required') ||
+      errMsg.includes('Access token has expired') ||
+      errMsg.includes('jwt expired');
+
+    // Attempt transparent token refresh if client-side
+    if (isAuthError && typeof window !== 'undefined') {
+      const savedRefreshToken = localStorage.getItem('youcoliva_refresh_token');
+      if (savedRefreshToken) {
+        try {
+          const refreshRes = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              query: `
+                mutation RefreshToken($refreshToken: String!) {
+                  refreshToken(refreshToken: $refreshToken) {
+                    accessToken
+                  }
+                }
+              `,
+              variables: { refreshToken: savedRefreshToken },
+            }),
+            credentials: 'omit',
+          });
+
+          const refreshJson = await refreshRes.json();
+          const newAccessToken = refreshJson.data?.refreshToken?.accessToken;
+          if (newAccessToken) {
+            localStorage.setItem('youcoliva_access_token', newAccessToken);
+
+            // Retry original request with new access token
+            headers['Authorization'] = `Bearer ${newAccessToken}`;
+            const retryRes = await fetch(API_URL, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ query, variables }),
+              credentials: 'omit',
+            });
+
+            const retryJson: GraphQLResponse<T> = await retryRes.json();
+            if (retryJson.data && (!retryJson.errors || retryJson.errors.length === 0)) {
+              return retryJson.data;
+            }
+          }
+        } catch {
+          // If refresh fails, fall through to throw original error
+        }
+      }
+    }
+
+    throw new Error(errMsg);
   }
 
   if (!json.data) {
