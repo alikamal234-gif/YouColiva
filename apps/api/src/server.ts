@@ -2,17 +2,22 @@ import http from 'http';
 import express, { type Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
+import type { Server as SocketIOServer } from 'socket.io';
 
 import { env } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 import { requestIdMiddleware } from './middleware/request-id.js';
 import { requestLogger } from './middleware/logger.js';
+import { authMiddleware } from './middleware/auth.middleware.js';
+import { apiRateLimiter } from './middleware/rate-limit.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { AppError } from './errors/app-error.js';
 import { healthRouter } from './modules/health/health.router.js';
+import { setupChatSocket } from './modules/chat/chat.socket.js';
 import { typeDefs, resolvers } from './graphql/schema.js';
 import { buildContext, type GraphQLContext } from './graphql/context.js';
 
@@ -20,11 +25,15 @@ export interface AppInstance {
   app: Express;
   httpServer: http.Server;
   apolloServer: ApolloServer<GraphQLContext>;
+  io: SocketIOServer;
 }
 
 export async function createApp(): Promise<AppInstance> {
   const app = express();
   const httpServer = http.createServer(app);
+
+  // Setup real-time Socket.IO chat gateway
+  const io = setupChatSocket(httpServer);
 
   // Apollo Server instantiation
   const apolloServer = new ApolloServer<GraphQLContext>({
@@ -70,9 +79,18 @@ export async function createApp(): Promise<AppInstance> {
     })
   );
 
+  // Cookie parser
+  app.use(cookieParser());
+
   // Request ID & Structured Logging
   app.use(requestIdMiddleware);
   app.use(requestLogger);
+
+  // Rate Limiting
+  app.use(apiRateLimiter);
+
+  // Authentication Middleware (populates req.user if Bearer token / cookie provided)
+  app.use(authMiddleware);
 
   // Body parser with safe limit
   app.use(express.json({ limit: '10mb' }));
@@ -96,7 +114,7 @@ export async function createApp(): Promise<AppInstance> {
   // Centralized error handler
   app.use(errorHandler);
 
-  return { app, httpServer, apolloServer };
+  return { app, httpServer, apolloServer, io };
 }
 
 let activeInstance: AppInstance | null = null;
@@ -115,6 +133,7 @@ export async function startServer(
       console.log(`🚀 YouColiva API server ready at http://localhost:${port}`);
       console.log(`📡 GraphQL endpoint ready at http://localhost:${port}/graphql`);
       console.log(`🩺 Health check ready at http://localhost:${port}/health`);
+      console.log(`💬 Socket.IO chat service ready at ws://localhost:${port}`);
       resolve();
     });
   });
@@ -124,6 +143,11 @@ export async function startServer(
     console.log(`\nReceived ${signal}. Starting graceful shutdown...`);
 
     try {
+      if (instance.io) {
+        instance.io.close();
+        console.log('Socket.IO service closed.');
+      }
+
       if (instance.httpServer.listening) {
         await new Promise<void>((resolve, reject) => {
           instance.httpServer.close((err) => (err ? reject(err) : resolve()));
@@ -153,6 +177,9 @@ export async function startServer(
 
 export async function stopServer(): Promise<void> {
   if (activeInstance) {
+    if (activeInstance.io) {
+      activeInstance.io.close();
+    }
     if (activeInstance.httpServer.listening) {
       await new Promise<void>((resolve, reject) => {
         activeInstance!.httpServer.close((err) => (err ? reject(err) : resolve()));

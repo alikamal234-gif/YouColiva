@@ -13,7 +13,7 @@ export const healthTypeDefs = `#graphql
     database: DatabaseHealth!
   }
 
-  type Query {
+  extend type Query {
     health: HealthStatus!
   }
 `;

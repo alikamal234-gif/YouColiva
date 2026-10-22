@@ -28,6 +28,22 @@ const envSchema = z.object({
         .map((origin) => origin.trim())
         .filter(Boolean)
     ),
+  JWT_ACCESS_SECRET: z
+    .string()
+    .default('youcoliva_jwt_access_secret_key_dev_minimum_32_characters'),
+  JWT_REFRESH_SECRET: z
+    .string()
+    .default('youcoliva_jwt_refresh_secret_key_dev_minimum_32_characters'),
+  JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
+  JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
+  RATE_LIMIT_WINDOW_MS: z
+    .string()
+    .default('900000')
+    .transform((val) => parseInt(val, 10)),
+  RATE_LIMIT_MAX: z
+    .string()
+    .default('100')
+    .transform((val) => parseInt(val, 10)),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

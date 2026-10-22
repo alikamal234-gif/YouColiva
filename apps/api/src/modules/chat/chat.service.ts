@@ -1,0 +1,119 @@
+import { Conversation, type IConversation } from '../../models/conversation.model.js';
+import { Message, type IMessage } from '../../models/message.model.js';
+import { AppError } from '../../errors/app-error.js';
+import type { TokenPayload } from '../../utils/auth-tokens.js';
+import mongoose from 'mongoose';
+
+export class ChatService {
+  static async getOrCreateConversation(
+    recipientId: string,
+    user: TokenPayload,
+    options: { listingId?: string; roommatePostId?: string } = {}
+  ): Promise<IConversation> {
+    if (recipientId === user.userId) {
+      throw AppError.badRequest('You cannot start a conversation with yourself');
+    }
+
+    const participants = [
+      new mongoose.Types.ObjectId(user.userId),
+      new mongoose.Types.ObjectId(recipientId),
+    ];
+
+    // Look for existing conversation between these two users (optionally tied to listing/roommate post)
+    const existing = await Conversation.findOne({
+      participants: { $all: participants, $size: 2 },
+      ...(options.listingId ? { listingId: options.listingId } : {}),
+      ...(options.roommatePostId ? { roommatePostId: options.roommatePostId } : {}),
+    }).populate('participants');
+
+    if (existing) {
+      return existing;
+    }
+
+    const conversation = await Conversation.create({
+      participants,
+      listingId: options.listingId,
+      roommatePostId: options.roommatePostId,
+      lastMessageAt: new Date(),
+    });
+
+    return conversation.populate('participants');
+  }
+
+  static async getUserConversations(user: TokenPayload): Promise<IConversation[]> {
+    return Conversation.find({
+      participants: new mongoose.Types.ObjectId(user.userId),
+    })
+      .populate('participants')
+      .populate('listingId')
+      .populate('roommatePostId')
+      .sort({ lastMessageAt: -1 });
+  }
+
+  static async getConversationMessages(
+    conversationId: string,
+    user: TokenPayload,
+    limit = 50,
+    offset = 0
+  ): Promise<{ items: IMessage[]; total: number }> {
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      throw AppError.notFound('Conversation not found');
+    }
+
+    const isParticipant = conversation.participants.some((p) => p.toString() === user.userId);
+    const isAdmin = user.role === 'ADMIN';
+
+    if (!isParticipant && !isAdmin) {
+      throw AppError.forbidden('You are not authorized to view messages in this conversation');
+    }
+
+    const query = { conversationId: new mongoose.Types.ObjectId(conversationId) };
+
+    const [items, total] = await Promise.all([
+      Message.find(query)
+        .populate('sender')
+        .sort({ createdAt: -1 })
+        .skip(offset)
+        .limit(Math.min(limit, 100)),
+      Message.countDocuments(query),
+    ]);
+
+    return { items, total };
+  }
+
+  static async sendMessage(
+    conversationId: string,
+    content: string,
+    user: TokenPayload
+  ): Promise<IMessage> {
+    const trimmed = content.trim();
+    if (!trimmed) {
+      throw AppError.badRequest('Message content cannot be empty');
+    }
+
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      throw AppError.notFound('Conversation not found');
+    }
+
+    const isParticipant = conversation.participants.some((p) => p.toString() === user.userId);
+
+    if (!isParticipant) {
+      throw AppError.forbidden('You can only send messages to conversations you participate in');
+    }
+
+    const message = await Message.create({
+      conversationId: conversation._id,
+      sender: user.userId,
+      content: trimmed,
+      readBy: [user.userId],
+    });
+
+    conversation.lastMessage = trimmed.substring(0, 100);
+    conversation.lastMessageAt = new Date();
+    await conversation.save();
+
+    return message.populate('sender');
+  }
+}
