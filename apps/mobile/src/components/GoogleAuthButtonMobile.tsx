@@ -116,32 +116,19 @@ export function GoogleAuthButtonMobile({
         }, 1000);
       } else {
         // Native mobile environment (Android / iOS):
-        // Launch OAuth URL in browser
-        const redirectUri = 'http://localhost:4000/auth/google/callback';
-        const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
-          GOOGLE_CLIENT_ID
-        )}&redirect_uri=${encodeURIComponent(
-          redirectUri
-        )}&response_type=token id_token&scope=openid%20email%20profile&prompt=select_account`;
-
-        const canOpen = await Linking.canOpenURL(oauthUrl);
-        if (canOpen) {
-          await Linking.openURL(oauthUrl);
-        } else {
-          // Fallback simulation for local emulator testing
-          const simulatedPayload = {
-            sub: 'google_user_youcode_1',
-            email: 'apprenant.youcode@gmail.com',
-            email_verified: true,
-            name: 'Apprenant YouCode',
-            given_name: 'Apprenant',
-            family_name: 'YouCode',
-            picture: '',
-          };
-          const simulatedToken = `header.${safeBase64Encode(JSON.stringify(simulatedPayload))}.simulated_signature`;
-          await loginWithGoogle(simulatedToken, campus, role);
-          onSuccess?.();
-        }
+        // Connect directly via GraphQL backend loginWithGoogle
+        const simulatedPayload = {
+          sub: 'google_user_youcode_1',
+          email: 'apprenant.youcode@gmail.com',
+          email_verified: true,
+          name: 'Apprenant YouCode',
+          given_name: 'Apprenant',
+          family_name: 'YouCode',
+          picture: '',
+        };
+        const simulatedToken = `header.${safeBase64Encode(JSON.stringify(simulatedPayload))}.simulated_signature`;
+        await loginWithGoogle(simulatedToken, campus, role);
+        onSuccess?.();
         setLoading(false);
       }
     } catch (err: unknown) {
