@@ -17,6 +17,12 @@ const readyStateMap: Record<number, DatabaseStatus['status']> = {
 export async function connectDatabase(uri?: string): Promise<typeof mongoose> {
   const connectionUri = uri || env.MONGODB_URI;
 
+  if (env.NODE_ENV === 'production' && connectionUri.includes('127.0.0.1')) {
+    console.warn(
+      '⚠️ ATTENTION: MONGODB_URI pointe vers 127.0.0.1 en production ! Veuillez renseigner la variable MONGODB_URI dans les paramètres Coolify.'
+    );
+  }
+
   try {
     mongoose.connection.on('connected', () => {
       console.log('MongoDB connection established successfully.');

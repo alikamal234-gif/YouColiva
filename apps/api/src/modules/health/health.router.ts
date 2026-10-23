@@ -4,6 +4,16 @@ import { env } from '../../config/env.js';
 
 export const healthRouter: Router = Router();
 
+healthRouter.get('/', (_req: Request, res: Response) => {
+  res.status(200).json({
+    name: 'YouColiva API',
+    status: 'online',
+    version: '1.0.0',
+    health: '/health',
+    graphql: '/graphql',
+  });
+});
+
 healthRouter.get('/health', async (_req: Request, res: Response) => {
   const dbStatus = await getDatabaseStatus();
   const isHealthy = dbStatus.status === 'connected';
