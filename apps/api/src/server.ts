@@ -75,15 +75,18 @@ export async function createApp(): Promise<AppInstance> {
           return callback(null, true);
         }
 
-        // Allow localhost and 127.0.0.1 on any port in development
-        if (
-          env.NODE_ENV !== 'production' &&
-          /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
-        ) {
+        // Allow wildcard or exact match from CORS_ORIGIN
+        if (env.CORS_ORIGIN.includes('*') || env.CORS_ORIGIN.includes(origin)) {
           return callback(null, true);
         }
 
-        if (env.CORS_ORIGIN.includes(origin)) {
+        // Allow all Vercel deployment URLs (production and preview branches)
+        if (/^https:\/\/([a-zA-Z0-9_-]+\.)?vercel\.app$/.test(origin)) {
+          return callback(null, true);
+        }
+
+        // Allow localhost and 127.0.0.1 on any port
+        if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
           return callback(null, true);
         }
 

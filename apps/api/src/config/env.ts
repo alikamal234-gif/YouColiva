@@ -21,7 +21,7 @@ const envSchema = z.object({
     .default('mongodb://127.0.0.1:27017/youcoliva_dev'),
   CORS_ORIGIN: z
     .string()
-    .default('http://localhost:3000,http://localhost:5173')
+    .default('http://localhost:3000,http://localhost:5173,https://youcoliva.vercel.app')
     .transform((origins) =>
       origins
         .split(',')
