@@ -9,6 +9,7 @@ import { NotificationDropdown } from './NotificationDropdown.js';
 import {
   Home,
   Users,
+  Search,
   Heart,
   MessageSquare,
   Shield,
@@ -49,6 +50,13 @@ export function Header() {
 
             {/* Desktop Main Navigation */}
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+              <Link
+                href="/recherche"
+                className="text-gray-600 hover:text-gray-900 flex items-center gap-1.5 transition-colors"
+              >
+                <Search className="w-4 h-4" />
+                <span>Recherche</span>
+              </Link>
               <Link
                 href="/listings"
                 className="text-gray-600 hover:text-gray-900 flex items-center gap-1.5 transition-colors"
@@ -175,6 +183,13 @@ export function Header() {
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-gray-200 bg-white px-4 pt-2 pb-4 space-y-2">
+          <Link
+            href="/recherche"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-2 text-sm font-medium text-gray-700"
+          >
+            Recherche
+          </Link>
           <Link
             href="/listings"
             onClick={() => setMobileMenuOpen(false)}

@@ -10,6 +10,7 @@ export interface FilterState {
   propertyType?: PropertyType;
   priceMax?: number;
   furnished?: boolean;
+  availablePlacesMin?: number;
 }
 
 export function ListingFilters({
@@ -96,8 +97,8 @@ export function ListingFilters({
         </div>
       </div>
 
-      {/* Furnished status */}
-      <div className="pt-2 border-t border-gray-100">
+      {/* Furnished & Colocation Status */}
+      <div className="pt-2 border-t border-gray-100 space-y-2.5">
         <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-700">
           <input
             type="checkbox"
@@ -106,6 +107,18 @@ export function ListingFilters({
             className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
           />
           <span>Logement meublé uniquement</span>
+        </label>
+
+        <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-700">
+          <input
+            type="checkbox"
+            checked={Boolean(filters.availablePlacesMin && filters.availablePlacesMin > 0)}
+            onChange={(e) =>
+              onChange({ availablePlacesMin: e.target.checked ? 1 : undefined })
+            }
+            className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+          />
+          <span>Places libres pour colocation</span>
         </label>
       </div>
     </div>

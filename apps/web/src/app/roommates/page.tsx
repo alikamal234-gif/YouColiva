@@ -36,6 +36,13 @@ function RoommatesContent() {
                 preferredRoommateGender
                 lifestyleHabits
                 createdAt
+                author {
+                  id
+                  firstName
+                  lastName
+                  isVerified
+                  role
+                }
               }
             }
           }

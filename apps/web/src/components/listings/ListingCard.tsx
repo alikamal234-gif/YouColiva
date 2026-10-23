@@ -110,7 +110,14 @@ export function ListingCard({
 
         <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
           <span>{PROPERTY_TYPE_LABELS[listing.propertyType] || listing.propertyType}</span>
-          <span>{listing.furnished ? 'Meublé' : 'Non meublé'}</span>
+          <div className="flex items-center gap-2">
+            {listing.availablePlaces !== undefined && listing.availablePlaces > 0 && (
+              <span className="text-[10px] text-brand-700 bg-brand-50 px-1.5 py-0.5 rounded border border-brand-100 font-medium">
+                {listing.availablePlaces} pl. libre{listing.availablePlaces > 1 ? 's' : ''}
+              </span>
+            )}
+            <span>{listing.furnished ? 'Meublé' : 'Non meublé'}</span>
+          </div>
         </div>
       </div>
     </div>

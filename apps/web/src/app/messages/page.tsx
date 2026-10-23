@@ -66,6 +66,7 @@ function MessagesContent() {
   const activeConversationId = searchParams.get('conversationId');
   const recipientIdFromUrl = searchParams.get('recipientId');
   const listingIdFromUrl = searchParams.get('listingId');
+  const roommatePostIdFromUrl = searchParams.get('roommatePostId');
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -190,7 +191,11 @@ function MessagesContent() {
       // Handle direct recipient flow or selected conversation
       const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
       if (recipientIdFromUrl) {
-        startOrSelectWithRecipient(recipientIdFromUrl, listingIdFromUrl || undefined);
+        startOrSelectWithRecipient(
+          recipientIdFromUrl,
+          listingIdFromUrl || undefined,
+          roommatePostIdFromUrl || undefined
+        );
       } else if (activeConversationId) {
         const found = list.find((c) => c.id === activeConversationId);
         if (found) {
@@ -209,11 +214,19 @@ function MessagesContent() {
     }
   };
 
-  const startOrSelectWithRecipient = async (recipientId: string, listingId?: string) => {
+  const startOrSelectWithRecipient = async (
+    recipientId: string,
+    listingId?: string,
+    roommatePostId?: string
+  ) => {
     try {
       const mutation = `
-        mutation GetOrCreateConv($recipientId: ID!, $listingId: ID) {
-          getOrCreateConversation(recipientId: $recipientId, listingId: $listingId) {
+        mutation GetOrCreateConv($recipientId: ID!, $listingId: ID, $roommatePostId: ID) {
+          getOrCreateConversation(
+            recipientId: $recipientId,
+            listingId: $listingId,
+            roommatePostId: $roommatePostId
+          ) {
             id
             participants {
               id
@@ -234,7 +247,7 @@ function MessagesContent() {
 
       const data = await fetchGraphQL<{ getOrCreateConversation: Conversation }>(
         mutation,
-        { recipientId, listingId },
+        { recipientId, listingId, roommatePostId },
         token
       );
 

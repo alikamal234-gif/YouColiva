@@ -42,6 +42,7 @@ function ListingsContent() {
                 pricePerMonth
                 propertyType
                 furnished
+                availablePlaces
                 images
                 location { longitude latitude }
               }
@@ -54,6 +55,7 @@ function ListingsContent() {
         if (filters.propertyType) filterPayload.propertyType = filters.propertyType;
         if (filters.priceMax) filterPayload.priceMax = filters.priceMax;
         if (filters.furnished !== undefined) filterPayload.furnished = filters.furnished;
+        if (filters.availablePlacesMin !== undefined) filterPayload.availablePlacesMin = filters.availablePlacesMin;
 
         const data = await fetchGraphQL<{ listings: { items: Listing[]; total: number } }>(
           query,

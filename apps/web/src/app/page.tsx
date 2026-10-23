@@ -8,7 +8,7 @@ import { fetchGraphQL } from '../lib/api-client.js';
 import type { Listing, RoommatePost } from '../types/index.js';
 import { ListingCard } from '../components/listings/ListingCard.js';
 import { RoommateCard } from '../components/roommates/RoommateCard.js';
-import { Search, Users, ArrowRight, ShieldCheck, MapPin } from 'lucide-react';
+import { Search, Users, ArrowRight, ShieldCheck, MapPin, Home } from 'lucide-react';
 
 export default function HomePage() {
   const { selectedCampus } = useCampus();
@@ -104,12 +104,31 @@ export default function HomePage() {
               />
             </div>
             <Link
-              href={`/listings?campus=${selectedCampus}${
+              href={`/recherche?campus=${selectedCampus}${
                 searchQuery ? `&neighborhood=${encodeURIComponent(searchQuery)}` : ''
               }`}
               className="inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-md transition-colors shadow-sm shrink-0"
             >
               Rechercher
+            </Link>
+          </div>
+
+          {/* Quick Choice Buttons for the two user profiles */}
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
+            <Link
+              href={`/recherche?campus=${selectedCampus}&mode=housing`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              <Home className="w-3.5 h-3.5 text-brand-600" />
+              <span>Je cherche un logement à louer</span>
+            </Link>
+
+            <Link
+              href={`/recherche?campus=${selectedCampus}&mode=roommates`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              <Users className="w-3.5 h-3.5 text-brand-600" />
+              <span>Je cherche des colocataires (m&apos;ajouter)</span>
             </Link>
           </div>
         </div>

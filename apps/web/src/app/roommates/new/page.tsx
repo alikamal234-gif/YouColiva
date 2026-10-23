@@ -189,7 +189,6 @@ export default function NewRoommatePostPage() {
                 onChange={(e) => setPreferredGender(e.target.value as RoommateGenderPreference)}
                 className="w-full text-xs h-10 rounded-md border border-gray-300 bg-white px-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-600"
               >
-                <option value="ANY">Indifférent / Mixte</option>
                 <option value="MALE">Homme uniquement</option>
                 <option value="FEMALE">Femme uniquement</option>
               </select>
